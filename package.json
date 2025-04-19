@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "three": "^0.175.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vite": "^6.3.2"
+  }
+}
