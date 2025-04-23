@@ -4,9 +4,11 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 // fox
 const loader = new GLTFLoader();
+let fox;
 loader.load('Fox.glb', (gltf) => {
 	gltf.scene.scale.set(0.05, 0.05, 0.05);
 	scene.add(gltf.scene);
+  fox = gltf.scene;
 }, undefined, (error) => {
 	console.error('Error loading fox', error);
 });
@@ -30,10 +32,10 @@ function updateMoveDirection() {
 	if (keysPressed.has(68)) {
 		moveDirection.add(new three.Vector3(0, 0, moveSpeed));
 	}
-	console.log(moveDirection);
+	//console.log(moveDirection);
 }
 
-// scene
+// scene & camera
 const scene = new three.Scene();
 const camera = new three.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
 camera.position.set(5, 10, 0);
@@ -81,21 +83,25 @@ scene.add(ambientLight);
 
 
 function resizeRenderer(renderer) {
-    const canvas = renderer.domElement;
-    const width = canvas.clientWidth;
-    const height = canvas.clientHeight;
-    const needResize = canvas.width !== width || canvas.height !== height;
-    if (needResize) renderer.setSize(width, height, false);
-    return needResize;
+  const canvas = renderer.domElement;
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight;
+  const needResize = canvas.width !== width || canvas.height !== height;
+  if (needResize) renderer.setSize(width, height, false);
+  return needResize;
 }
 
 function animate() {
-	camera.position.add(moveDirection);
+  position.add(moveDirection);
+  camera.position.add(moveDirection);
+  if (fox) fox.position.add(moveDirection);
+  controls.target.set(position.x, position.y, position.z);
+  controls.update();
   if (resizeRenderer(renderer)) {
-      camera.aspect = canvas.clientWidth / canvas.clientHeight;
-      camera.updateProjectionMatrix(renderer);
+    camera.aspect = canvas.clientWidth / canvas.clientHeight;
+    camera.updateProjectionMatrix(renderer);
   }
-	renderer.render( scene, camera );
+  renderer.render( scene, camera );
 }
 renderer.setAnimationLoop( animate );
 
