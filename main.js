@@ -1,6 +1,25 @@
 import * as three from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { Sky } from 'three/addons/objects/Sky.js';
+
+
+// scene & camera
+const scene = new three.Scene();
+const camera = new three.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+camera.position.set(5, 10, 0);
+const renderer = new three.WebGLRenderer({antialias: true});
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+// sky
+const sky = new Sky();
+sky.scale.setScalar( 450000 );
+const phi = three.MathUtils.degToRad( 90 );
+const theta = three.MathUtils.degToRad( 180 );
+const sunPosition = new three.Vector3().setFromSphericalCoords( 1, phi, theta );
+sky.material.uniforms.sunPosition.value = sunPosition;
+scene.add( sky );
 
 // fox
 const loader = new GLTFLoader();
@@ -15,33 +34,26 @@ loader.load('Fox.glb', (gltf) => {
 const position = new three.Vector3(0, 0, 0);
 const moveDirection = new three.Vector3(0, 0, 0);
 const keysPressed = new Set([]);
-let moveSpeed = 0.1;
+let moveSpeed = 10;
 
+// input
 function updateMoveDirection() {
 	moveDirection.set(0, 0, 0);
 
-  if (keysPressed.has(87)) {
-    moveDirection.add(new three.Vector3(moveSpeed, 0, 0));
+  if (keysPressed.has(87)) { // w
+    moveDirection.add(new three.Vector3(1, 0, 0));
 	}
-	if (keysPressed.has(65)) {
-		moveDirection.add(new three.Vector3(0, 0, -moveSpeed));
+	if (keysPressed.has(65)) { // a
+		moveDirection.add(new three.Vector3(0, 0, -1));
 	}
-	if (keysPressed.has(83)) {
-		moveDirection.add(new three.Vector3(-moveSpeed, 0, 0));
+	if (keysPressed.has(83)) { // s
+		moveDirection.add(new three.Vector3(-1, 0, 0));
 	}
-	if (keysPressed.has(68)) {
-		moveDirection.add(new three.Vector3(0, 0, moveSpeed));
+	if (keysPressed.has(68)) { // d
+		moveDirection.add(new three.Vector3(0, 0, 1));
 	}
-	//console.log(moveDirection);
+//	console.log(moveDirection);
 }
-
-// scene & camera
-const scene = new three.Scene();
-const camera = new three.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
-camera.position.set(5, 10, 0);
-const renderer = new three.WebGLRenderer({antialias: true});
-renderer.setSize( window.innerWidth, window.innerHeight );
-document.body.appendChild( renderer.domElement );
 
 //canvas
 const canvas = renderer.domElement;
@@ -61,10 +73,13 @@ canvas.addEventListener('keyup', (e) => {
 
 // cube
 const geometry = new three.BoxGeometry( 1, 1, 1 );
-const material = new three.MeshLambertMaterial( { color: 0x00ff00 } );
+const material = new three.MeshLambertMaterial( { color: 0x44dd22} );
 const cube = new three.Mesh( geometry, material );
 cube.position.setY(0.5);
 scene.add( cube );
+const floorGeometry = new three.BoxGeometry(100, 1, 100);
+const floor = new three.Mesh(floorGeometry, material);
+scene.add(floor);
 
 // light
 const sunColor = 0xffffff;
@@ -81,7 +96,10 @@ const ambientLight = new three.HemisphereLight(skyColor, groundColor, ambientInt
 scene.add(ambientLight);
 
 
+// timer
+const clock = new three.Clock();
 
+// rendering
 function resizeRenderer(renderer) {
   const canvas = renderer.domElement;
   const width = canvas.clientWidth;
@@ -92,9 +110,22 @@ function resizeRenderer(renderer) {
 }
 
 function animate() {
-  position.add(moveDirection);
-  camera.position.add(moveDirection);
-  if (fox) fox.position.add(moveDirection);
+  const delta = clock.getDelta();
+  let lookDirection = new three.Vector3();
+  camera.getWorldDirection(lookDirection);
+  let lookAngle = Math.atan2(lookDirection.x, lookDirection.z);
+  lookAngle -= Math.PI / 2;
+//  console.log(lookDirection);
+//  console.log(moveDirection);
+  const rotatedMoveDirection = moveDirection.clone();
+  rotatedMoveDirection.applyAxisAngle(new three.Vector3(0, 1, 0), lookAngle);
+//  console.log(rotatedMoveDirection);
+  rotatedMoveDirection.setY(0);
+  rotatedMoveDirection.normalize();
+  const velocity = rotatedMoveDirection.multiplyScalar(moveSpeed * delta);
+  camera.position.add(velocity);
+  position.add(velocity);
+  if (fox) fox.position.add(velocity);
   controls.target.set(position.x, position.y, position.z);
   controls.update();
   if (resizeRenderer(renderer)) {
