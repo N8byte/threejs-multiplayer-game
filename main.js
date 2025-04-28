@@ -11,6 +11,13 @@ camera.position.set(5, 10, 0);
 const renderer = new three.WebGLRenderer({antialias: true});
 renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
+const controls = new OrbitControls( camera, renderer.domElement );
+controls.enableDamping = true;
+controls.enablePan = false;
+controls.maxDistance = 20;
+controls.minDistance = 5;
+//controls.maxAzimuthAngle = Math.PI / 8;
+//controls.minAzimuthAngle = Math.PI / 4;
 
 // sky
 const sky = new Sky();
@@ -136,4 +143,3 @@ function animate() {
 }
 renderer.setAnimationLoop( animate );
 
-const controls = new OrbitControls( camera, renderer.domElement );
