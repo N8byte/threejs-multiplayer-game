@@ -16,7 +16,7 @@ controls.enableDamping = true;
 controls.enablePan = false;
 controls.maxDistance = 20;
 controls.minDistance = 5;
-//controls.maxAzimuthAngle = Math.PI / 8;
+controls.maxPolarAngle = Math.PI / 2;
 //controls.minAzimuthAngle = Math.PI / 4;
 
 // sky
@@ -39,6 +39,8 @@ loader.load('Fox.glb', (gltf) => {
 	console.error('Error loading fox', error);
 });
 const position = new three.Vector3(0, 0, 0);
+const rotation = new three.Quaternion();
+const ROTATION_SPEED = 10.0;
 const moveDirection = new three.Vector3(0, 0, 0);
 const keysPressed = new Set([]);
 let moveSpeed = 10;
@@ -78,7 +80,7 @@ canvas.addEventListener('keyup', (e) => {
 	updateMoveDirection();
 });
 
-// cube
+// cube and floor
 const geometry = new three.BoxGeometry( 1, 1, 1 );
 const material = new three.MeshLambertMaterial( { color: 0x44dd22} );
 const cube = new three.Mesh( geometry, material );
@@ -86,6 +88,7 @@ cube.position.setY(0.5);
 scene.add( cube );
 const floorGeometry = new three.BoxGeometry(100, 1, 100);
 const floor = new three.Mesh(floorGeometry, material);
+floor.position.setY(-0.5);
 scene.add(floor);
 
 // light
@@ -122,18 +125,22 @@ function animate() {
   camera.getWorldDirection(lookDirection);
   let lookAngle = Math.atan2(lookDirection.x, lookDirection.z);
   lookAngle -= Math.PI / 2;
-//  console.log(lookDirection);
-//  console.log(moveDirection);
   const rotatedMoveDirection = moveDirection.clone();
   rotatedMoveDirection.applyAxisAngle(new three.Vector3(0, 1, 0), lookAngle);
-//  console.log(rotatedMoveDirection);
   rotatedMoveDirection.setY(0);
   rotatedMoveDirection.normalize();
   const velocity = rotatedMoveDirection.multiplyScalar(moveSpeed * delta);
   camera.position.add(velocity);
   position.add(velocity);
-  if (fox) fox.position.add(velocity);
-  controls.target.set(position.x, position.y, position.z);
+  if (fox) {
+    fox.position.add(velocity);
+    const moveAngle = Math.atan2(rotatedMoveDirection.x, rotatedMoveDirection.z);
+    if (moveAngle) {
+      rotation.setFromAxisAngle(new three.Vector3(0, 1, 0), moveAngle);
+      fox.quaternion.rotateTowards(rotation, delta * ROTATION_SPEED);
+    }
+  }
+  controls.target.set(position.x, position.y + 2, position.z);
   controls.update();
   if (resizeRenderer(renderer)) {
     camera.aspect = canvas.clientWidth / canvas.clientHeight;
